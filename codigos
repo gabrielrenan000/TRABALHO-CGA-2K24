@@ -1,0 +1,391 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX_USERS 100
+#define MAX_NOTAS 10
+#define HASH_LENGTH 20
+
+typedef struct {
+    char nome[100];
+    int idade;
+    char sexo[10];
+    char email[100];
+    char rg[20];
+    char cpf[20];
+    char senha[HASH_LENGTH];
+    float notas[MAX_NOTAS];
+    int total_notas;
+} Aluno;
+
+typedef struct {
+    char nome[100];
+    int idade;
+    char sexo[10];
+    char email[100];
+    char rg[20];
+    char cpf[20];
+    char senha[HASH_LENGTH];
+} Professor;
+
+Aluno alunos[MAX_USERS];
+Professor professores[MAX_USERS];
+int total_alunos = 0;
+int total_professores = 0;
+
+void hashPassword(const char *password, char *hash) {
+    memset(hash, 0, HASH_LENGTH);
+    int len = strlen(password);
+    for (int i = 0; i < len; i++) {
+        hash[i % HASH_LENGTH] ^= password[i];
+    }
+}
+
+void printHash(const char *hash) {
+    for (int i = 0; i < HASH_LENGTH; i++) {
+        printf("%02x", (unsigned char)hash[i]);
+    }
+    printf("\n");
+}
+
+void registrarAluno() {
+    if (total_alunos >= MAX_USERS) {
+        printf("Limite de alunos atingido!\n");
+        return;
+    }
+
+    Aluno a;
+    char senha[20];
+    printf("----- Registrar Aluno -----\n");
+    printf("Nome: ");
+    scanf(" %99[^\n]", a.nome);
+    printf("Idade: ");
+    scanf("%d", &a.idade);
+    printf("Sexo (M/F): ");
+    scanf(" %9s", a.sexo);
+    printf("Email: ");
+    scanf(" %99s", a.email);
+    printf("RG: ");
+    scanf(" %19s", a.rg);
+    printf("CPF: ");
+    scanf(" %19s", a.cpf);
+    printf("Senha: ");
+    scanf(" %19s", senha);
+
+    hashPassword(senha, a.senha);
+
+    a.total_notas = 0; // Inicializar o total de notas
+
+    alunos[total_alunos++] = a;
+    printf("Aluno registrado com sucesso!\n");
+}
+
+void registrarProfessor() {
+    if (total_professores >= MAX_USERS) {
+        printf("Limite de professores atingido!\n");
+        return;
+    }
+
+    Professor p;
+    char senha[20];
+    printf("----- Registrar Professor -----\n");
+    printf("Nome: ");
+    scanf(" %99[^\n]", p.nome);
+    printf("Idade: ");
+    scanf("%d", &p.idade);
+    printf("Sexo (M/F): ");
+    scanf(" %9s", p.sexo);
+    printf("Email: ");
+    scanf(" %99s", p.email);
+    printf("RG: ");
+    scanf(" %19s", p.rg);
+    printf("CPF: ");
+    scanf(" %19s", p.cpf);
+    printf("Senha: ");
+    scanf(" %19s", senha);
+
+    hashPassword(senha, p.senha);
+
+    professores[total_professores++] = p;
+    printf("Professor registrado com sucesso!\n");
+}
+
+int loginAluno(char *email, char *senha) {
+    char hashed_senha[HASH_LENGTH];
+    hashPassword(senha, hashed_senha);
+
+    for (int i = 0; i < total_alunos; i++) {
+        if (strcmp(alunos[i].email, email) == 0 && memcmp(alunos[i].senha, hashed_senha, HASH_LENGTH) == 0) {
+            return i; // Retorna o índice do aluno
+        }
+    }
+    return -1; // Login falhou
+}
+
+int loginProfessor(char *email, char *senha) {
+    char hashed_senha[HASH_LENGTH];
+    hashPassword(senha, hashed_senha);
+
+    for (int i = 0; i < total_professores; i++) {
+        if (strcmp(professores[i].email, email) == 0 && memcmp(professores[i].senha, hashed_senha, HASH_LENGTH) == 0) {
+            return i; // Retorna o índice do professor
+        }
+    }
+    return -1; // Login falhou
+}
+
+void consultarNotas(int alunoIndex) {
+    Aluno *a = &alunos[alunoIndex];
+    printf("----- Notas de %s -----\n", a->nome);
+    for (int i = 0; i < a->total_notas; i++) {
+        printf("Nota %d: %.2f\n", i + 1, a->notas[i]);
+    }
+}
+
+void lancarNotas() {
+    char cpf[20];
+    float nota;
+    printf("----- Lancar Notas -----\n");
+    printf("Digite o CPF do aluno: ");
+    scanf(" %19s", cpf);
+
+    for (int i = 0; i < total_alunos; i++) {
+        if (strcmp(alunos[i].cpf, cpf) == 0) {
+            if (alunos[i].total_notas >= MAX_NOTAS) {
+                printf("Limite de notas atingido para este aluno.\n");
+                return;
+            }
+            printf("Aluno encontrado: %s\n", alunos[i].nome);
+            printf("Digite a nota: ");
+            scanf("%f", &nota);
+            alunos[i].notas[alunos[i].total_notas++] = nota;
+            printf("Nota lancada com sucesso!\n");
+            return;
+        }
+    }
+    printf("Aluno com CPF %s não encontrado.\n", cpf);
+}
+
+void alterarDadosAluno() {
+    char cpf[20];
+    char opcao;
+    char novaSenha[20];
+
+    printf("----- Alterar Dados de Aluno -----\n");
+    printf("Digite o CPF do aluno: ");
+    scanf(" %19s", cpf);
+
+    for (int i = 0; i < total_alunos; i++) {
+        if (strcmp(alunos[i].cpf, cpf) == 0) {
+            Aluno *a = &alunos[i];
+
+            printf("Nome atual: %s\n", a->nome);
+            printf("Deseja alterar o nome? (s/n): ");
+            scanf(" %c", &opcao);
+            if (opcao == 's' || opcao == 'S') {
+                printf("Novo nome: ");
+                scanf(" %99[^\n]", a->nome);
+            }
+
+            printf("Idade atual: %d\n", a->idade);
+            printf("Deseja alterar a idade? (s/n): ");
+            scanf(" %c", &opcao);
+            if (opcao == 's' || opcao == 'S') {
+                printf("Nova idade: ");
+                scanf("%d", &a->idade);
+            }
+
+            printf("Sexo atual: %s\n", a->sexo);
+            printf("Deseja alterar o sexo? (s/n): ");
+            scanf(" %c", &opcao);
+            if (opcao == 's' || opcao == 'S') {
+                printf("Novo sexo (M/F): ");
+                scanf(" %9s", a->sexo);
+            }
+
+            printf("Email atual: %s\n", a->email);
+            printf("Deseja alterar o email? (s/n): ");
+            scanf(" %c", &opcao);
+            if (opcao == 's' || opcao == 'S') {
+                printf("Novo email: ");
+                scanf(" %99s", a->email);
+            }
+
+            printf("RG atual: %s\n", a->rg);
+            printf("Deseja alterar o RG? (s/n): ");
+            scanf(" %c", &opcao);
+            if (opcao == 's' || opcao == 'S') {
+                printf("Novo RG: ");
+                scanf(" %19s", a->rg);
+            }
+
+            printf("CPF atual: %s\n", a->cpf);
+            printf("Deseja alterar o CPF? (s/n): ");
+            scanf(" %c", &opcao);
+            if (opcao == 's' || opcao == 'S') {
+                printf("Novo CPF: ");
+                scanf(" %19s", a->cpf);
+            }
+
+            printf("Deseja alterar a senha? (s/n): ");
+            scanf(" %c", &opcao);
+            if (opcao == 's' || opcao == 'S') {
+                printf("Nova senha: ");
+                scanf(" %19s", novaSenha);
+                hashPassword(novaSenha, a->senha);
+            }
+
+            printf("Dados alterados com sucesso!\n");
+            return;
+        }
+    }
+
+    printf("Aluno com CPF %s não encontrado.\n", cpf);
+}
+
+void removerAluno() {
+    char cpf[20];
+    printf("----- Remover Aluno -----\n");
+    printf("Digite o CPF do aluno a ser removido: ");
+    scanf(" %19s", cpf);
+
+    for (int i = 0; i < total_alunos; i++ ) {
+        if (strcmp(alunos[i].cpf, cpf) == 0) {
+            // Movendo todos os alunos após o aluno removido uma posição para frente
+            for (int j = i; j < total_alunos - 1; j++) {
+                alunos[j] = alunos[j + 1];
+            }
+            total_alunos--;
+            printf("Aluno removido com sucesso!\n");
+            return;
+        }
+    }
+    printf("Aluno com CPF %s nao encontrado.\n", cpf);
+}
+
+void listarAlunos() {
+    printf("----- Lista de Alunos Registrados -----\n");
+    for (int i = 0; i < total_alunos; i++) {
+        printf("Nome: %s, Email: %s, CPF: %s\n", alunos[i].nome, alunos[i].email, alunos[i].cpf);
+    }
+}
+
+void menuAluno(int alunoIndex) {
+    int opcao;
+    do {
+        printf("\n----- Menu Aluno -----\n");
+        printf("1. Consultar Notas\n");
+        printf("2. Sair\n");
+        printf("Escolha uma opcao: ");
+        scanf("%d", &opcao);
+
+        switch (opcao) {
+            case 1:
+                consultarNotas(alunoIndex);
+                break;
+            case 2:
+                printf("Saindo...\n");
+                return;
+            default:
+                printf("Opcao invalida. Tente novamente.\n");
+        }
+    } while (1);
+}
+
+void menuProfessor() {
+    int opcao;
+    do {
+        printf("\n----- Menu Professor -----\n");
+        printf("1. Lancar Notas\n");
+        printf("2. Remover Aluno\n");
+        printf("3. Listar Alunos\n");
+        printf("4. Sair\n");
+        printf("Escolha uma opcao: ");
+        scanf("%d", &opcao);
+
+        switch (opcao) {
+            case 1:
+                lancarNotas();
+                break;
+            case 2:
+                removerAluno();
+                break;
+            case 3:
+                listarAlunos();
+                break;
+            case 4:
+                printf("Saindo...\n");
+                return;
+            default:
+                printf("Opcao invalida. Tente novamente.\n");
+        }
+    } while (1);
+}
+
+void menuPrincipal() {
+    int opcao;
+    char email[100], senha[20];
+    do {
+        printf("\n----- Sistema de Registro -----\n");
+        printf("1. Registrar Aluno\n");
+        printf("2. Registrar Professor\n");
+        printf("3. Login Aluno\n");
+        printf("4. Login Professor\n");
+        printf("5. Remover Aluno\n");
+        printf("6. Alterar Dados de Aluno\n");
+        printf("7. Sair\n");
+        printf("Escolha uma opcao: ");
+        scanf("%d", &opcao);
+
+        switch (opcao) {
+            case 1:
+                registrarAluno();
+                break;
+            case 2:
+                registrarProfessor();
+                break;
+            case 3:
+                printf("Email: ");
+                scanf(" %99s", email);
+                printf("Senha: ");
+                scanf(" %19s", senha);
+                int alunoIndex = loginAluno(email, senha);
+                if (alunoIndex != -1) {
+                    printf("Login bem-sucedido! Bem-vindo(a) %s\n", alunos[alunoIndex].nome);
+                    menuAluno(alunoIndex);
+                } else {
+                    printf("Email ou senha incorretos. Consulte a secretaria e tente novamente. \n");
+                }
+                break;
+            case 4:
+                printf("Email: ");
+                scanf(" %99s", email);
+                printf("Senha: ");
+                scanf(" %19s", senha);
+                int professorIndex = loginProfessor(email, senha);
+                if (professorIndex != -1) {
+                    printf("Login bem-sucedido! Bem-vindo(a) %s\n", professores[professorIndex].nome);
+                    menuProfessor();
+                } else {
+                    printf("Email ou senha incorretos. Consulte a secretaria e tente novamente. \n");
+                }
+                break;
+            case 5:
+                removerAluno();
+                break;
+            case 6:
+                alterarDadosAluno();
+                break;
+            case 7:
+                printf("Saindo do sistema...\n");
+                return;
+            default:
+                printf("Opcao invalida. Tente novamente.\n");
+        }
+    } while (1);
+}
+
+int main() {
+    menuPrincipal();
+    return 0;
+}
